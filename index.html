@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cal AI">
+<title>Cal AI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap');
+:root{--bg:#0a0a14;--surface:#0f0f1a;--surface2:#1a1a2e;--border:#1e293b;--text:#e2e8f0;--muted:#475569;--dim:#334155;--orange:#f97316;--yellow:#eab308;--safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:430px;margin:0 auto}
+.header{padding:calc(var(--safe-top) + 14px) 20px 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.logo{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;background:linear-gradient(90deg,var(--orange),var(--yellow));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-date{font-size:11px;color:var(--muted);margin-top:2px}
+.settings-ico{background:none;border:1px solid var(--border);color:var(--muted);width:38px;height:38px;border-radius:11px;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ring-section{margin:14px 16px;padding:18px;border-radius:20px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;gap:18px;flex-shrink:0}
+.ring-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.macro-pills{display:flex;gap:5px}
+.pill{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500}
+.pill-p{background:#1e3a2f;color:#4ade80}.pill-c{background:#2d2510;color:#fbbf24}.pill-g{background:#2d1a10;color:#fb923c}
+.ring-info{flex:1}.ring-info h3{font-family:'Syne',sans-serif;font-size:16px}.ring-info p{font-size:11px;color:var(--muted);margin-top:3px}
+.goal-bar{margin-top:8px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.goal-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--yellow));border-radius:2px;transition:width .6s}
+.ring-count{margin-top:6px;font-size:10px;color:var(--dim)}
+.tabs{display:flex;gap:6px;padding:0 16px 14px;flex-shrink:0}
+.tab-btn{flex:1;padding:10px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;transition:all .2s}
+.tab-btn.active{background:var(--surface2);border-color:var(--orange);color:var(--orange)}
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px calc(var(--safe-bot) + 20px)}
+.mode-toggle{display:flex;gap:8px;margin-bottom:14px}
+.mode-btn{flex:1;padding:11px;border-radius:13px;border:1px solid var(--border);background:transparent;color:#64748b;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;transition:all .2s}
+.mode-btn.active{background:linear-gradient(135deg,#7c2d12,#451a03);border-color:var(--orange);color:#fb923c}
+.photo-drop{border:2px dashed var(--border);border-radius:20px;padding:36px 20px;text-align:center;cursor:pointer;background:var(--surface);margin-bottom:10px}
+.drop-icon{font-size:40px;display:block;margin-bottom:10px}
+.drop-title{font-family:'Syne',sans-serif;font-size:15px;color:#94a3b8;margin-bottom:4px}
+.drop-sub{font-size:11px;color:var(--muted)}
+.preview-img{width:100%;border-radius:16px;max-height:240px;object-fit:cover;display:block;margin-bottom:10px}
+.retry-btn{width:100%;padding:11px;border-radius:13px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;margin-bottom:10px}
+.barcode-area{display:flex;flex-direction:column;gap:12px}
+.scan-big-btn{width:100%;padding:30px 20px;border-radius:20px;border:2px dashed var(--border);background:var(--surface);color:var(--orange);font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px}
+.scan-big-btn .ico{font-size:44px}.scan-big-btn .sub{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;font-weight:400}
+.divider{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:11px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border)}
+.manual-row{display:flex;gap:8px}
+.barcode-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:15px;outline:none;-webkit-appearance:none}
+.barcode-input:focus{border-color:var(--orange)}
+.go-btn{background:linear-gradient(135deg,var(--orange),#dc2626);border:none;color:white;padding:12px 18px;border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
+.go-btn:disabled{opacity:.4}
+.scanned-ok{background:#0f2d0f;border:1px solid #166534;border-radius:10px;padding:9px 14px;font-size:12px;color:#4ade80}
+.loading{text-align:center;padding:28px 0}
+.spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{font-size:12px;color:var(--muted)}
+.error-box{background:#1a0a0a;border:1px solid #7f1d1d;border-radius:12px;padding:12px;font-size:12px;color:#fca5a5;margin-bottom:10px}
+.result-card{background:var(--surface);border:1px solid var(--orange);border-radius:20px;padding:16px;margin-bottom:10px}
+.result-name{font-family:'Syne',sans-serif;font-size:17px;margin-bottom:2px}
+.result-sub{font-size:11px;color:var(--muted);margin-bottom:14px}
+.macros-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.macro-box{background:var(--surface2);border-radius:11px;padding:9px;text-align:center}
+.macro-box .val{font-family:'Syne',sans-serif;font-size:17px}.macro-box .lbl{font-size:9px;color:var(--muted);margin-top:2px}
+.macro-box.kcal .val{color:var(--orange)}
+.gram-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.gram-row label{font-size:11px;color:var(--muted);white-space:nowrap}
+.gram-input{width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;outline:none;-webkit-appearance:none}
+.gram-input:focus{border-color:var(--orange)}
+.notes-txt{font-size:10px;color:var(--dim);text-align:center;margin-bottom:12px;font-style:italic}
+.confirm-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--orange),var(--yellow));border:none;border-radius:14px;font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#0a0a14;cursor:pointer}
+.log-empty{text-align:center;color:var(--dim);padding:50px 0;font-size:13px;line-height:2}
+.log-section-title{font-size:11px;color:var(--muted);padding:4px 0 6px}
+.entry-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:13px;margin-bottom:8px}
+.entry-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+.entry-ico{font-size:20px;margin-top:1px}.entry-info{flex:1}
+.entry-name{font-size:13px;display:block}.entry-brand{font-size:10px;color:var(--muted);display:block}.entry-qty{font-size:10px;color:#64748b}
+.entry-kcal{font-family:'Syne',sans-serif;font-size:20px;color:var(--orange);line-height:1}
+.entry-kcal span{font-size:10px;color:var(--muted)}
+.del-btn{background:none;border:none;color:var(--dim);font-size:16px;cursor:pointer;padding:2px 4px}
+.entry-macros{font-size:10px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.conf-badge{margin-left:auto}.conf-alta{color:#22c55e}.conf-media{color:#eab308}.conf-baja{color:#ef4444}
+.entry-note{font-size:10px;color:var(--dim);margin-top:4px;font-style:italic}
+.entry-time{font-size:9px;color:var(--border);display:block;margin-top:3px}
+#scanner-view{position:fixed;inset:0;background:#000;z-index:100;display:flex;flex-direction:column}
+#scanner-view.hidden{display:none}
+.scan-header{padding:calc(var(--safe-top) + 16px) 20px 16px;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,.5)}
+.scan-title{font-family:'Syne',sans-serif;font-size:18px;color:var(--orange);font-weight:700}
+.scan-close{background:none;border:1px solid #334155;color:#94a3b8;width:38px;height:38px;border-radius:10px;font-size:16px;cursor:pointer}
+#scanner-video-wrap{flex:1;position:relative;overflow:hidden}
+#scanner-video{width:100%;height:100%;object-fit:cover;display:block}
+.scan-overlay-frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scan-overlay-frame::before{content:"";position:absolute;inset:18%;border:1px solid rgba(249,115,22,.2);border-radius:6px}
+.corner{position:absolute;width:28px;height:28px;border-color:var(--orange);border-style:solid}
+.c-tl{top:18%;left:18%;border-width:3px 0 0 3px;border-radius:5px 0 0 0}
+.c-tr{top:18%;right:18%;border-width:3px 3px 0 0;border-radius:0 5px 0 0}
+.c-bl{bottom:18%;left:18%;border-width:0 0 3px 3px;border-radius:0 0 0 5px}
+.c-br{bottom:18%;right:18%;border-width:0 3px 3px 0;border-radius:0 0 5px 0}
+.scan-line{position:absolute;left:19%;right:19%;height:2px;background:linear-gradient(90deg,transparent,var(--orange),transparent);box-shadow:0 0 10px var(--orange);animation:scanMove 2s ease-in-out infinite}
+@keyframes scanMove{0%{top:19%}50%{top:80%}100%{top:19%}}
+#scan-success-overlay{position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
+#scan-success-overlay.hidden{display:none}
+.success-circle{width:90px;height:90px;border-radius:50%;background:#16a34a;display:flex;align-items:center;justify-content:center;font-size:46px;animation:popIn .35s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes popIn{from{transform:scale(0)}to{transform:scale(1)}}
+.scan-status{padding:14px 20px 6px;text-align:center;font-size:13px;color:#94a3b8}
+.scan-hint{padding:0 20px calc(var(--safe-bot) + 16px);text-align:center;font-size:10px;color:var(--dim)}
+#settings-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end}
+#settings-modal.hidden{display:none}
+.modal-sheet{background:var(--surface);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:430px;margin:0 auto;padding-bottom:calc(var(--safe-bot) + 24px);max-height:85dvh;overflow-y:auto}
+.modal-sheet h2{font-family:'Syne',sans-serif;margin-bottom:20px;font-size:18px}
+.modal-sheet label{font-size:11px;color:var(--muted);display:block;margin:14px 0 5px}
+.modal-sheet input[type=password],.modal-sheet input[type=number]{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:11px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;outline:none;-webkit-appearance:none}
+.modal-sheet input:focus{border-color:var(--orange)}
+.modal-actions{display:flex;gap:8px;margin-top:22px}
+.btn-save{flex:2;padding:14px;background:linear-gradient(135deg,var(--orange),var(--yellow));border:none;border-radius:13px;font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#0a0a14;cursor:pointer}
+.btn-cancel{flex:1;padding:14px;background:transparent;border:1px solid var(--border);border-radius:13px;color:var(--muted);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer}
+.key-note{font-size:10px;color:var(--dim);text-align:center;margin-top:14px;line-height:1.6}
+.api-link{color:var(--orange);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div id="scanner-view" class="hidden">
+  <div class="scan-header">
+    <span class="scan-title">▦ Escanear código</span>
+    <button class="scan-close" onclick="closeScanner()">✕</button>
+  </div>
+  <div id="scanner-video-wrap">
+    <video id="scanner-video" autoplay muted playsinline></video>
+    <div class="scan-overlay-frame">
+      <div class="corner c-tl"></div><div class="corner c-tr"></div>
+      <div class="corner c-bl"></div><div class="corner c-br"></div>
+      <div class="scan-line"></div>
+    </div>
+    <div id="scan-success-overlay" class="hidden">
+      <div class="success-circle">✓</div>
+    </div>
+  </div>
+  <div class="scan-status" id="scan-status">Iniciando…</div>
+  <p class="scan-hint">Encuadra el código dentro del marco · EAN-13 · EAN-8 · Code128 · UPC</p>
+</div>
+
+<div id="settings-modal" class="hidden">
+  <div class="modal-sheet">
+    <h2>Configuración ⚙️</h2>
+    <label>API Key Google Gemini &nbsp;<a href="https://aistudio.google.com/app/apikey" target="_blank" class="api-link">→ Obtener gratis</a></label>
+    <input type="password" id="cfg-gemini" placeholder="AIzaSy…">
+    <label>Objetivo calórico diario (kcal)</label>
+    <input type="number" id="cfg-goal" value="2000" min="500" max="9999">
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveSettings()">Guardar</button>
+      <button class="btn-cancel" onclick="closeSettings()">Cancelar</button>
+    </div>
+    <p class="key-note">🔒 Tu API key se guarda solo en este dispositivo (localStorage).<br>Nunca se envía a ningún servidor de Cal AI.</p>
+  </div>
+</div>
+
+<div id="app">
+  <div class="header">
+    <div>
+      <div class="logo">Cal AI</div>
+      <div class="header-date" id="header-date"></div>
+    </div>
+    <button class="settings-ico" onclick="openSettings()">⚙</button>
+  </div>
+
+  <div class="ring-section">
+    <div class="ring-wrap">
+      <svg width="114" height="114" style="overflow:visible">
+        <circle cx="57" cy="57" r="50" fill="none" stroke="#1e1e2e" stroke-width="10"/>
+        <circle id="ring-arc" cx="57" cy="57" r="50" fill="none" stroke="url(#rg)" stroke-width="10"
+          stroke-linecap="round" stroke-dasharray="0 314.16" transform="rotate(-90 57 57)"
+          style="transition:stroke-dasharray .6s cubic-bezier(.4,0,.2,1)"/>
+        <defs><linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#f97316"/><stop offset="100%" stop-color="#eab308"/>
+        </linearGradient></defs>
+        <text id="ring-kcal" x="57" y="51" text-anchor="middle" fill="#f1f5f9" font-size="18" font-weight="700" font-family="Syne,sans-serif">0</text>
+        <text x="57" y="67" text-anchor="middle" fill="#64748b" font-size="10" font-family="DM Mono,monospace">kcal</text>
+      </svg>
+      <div class="macro-pills">
+        <span class="pill pill-p" id="ring-prot">P 0g</span>
+        <span class="pill pill-c" id="ring-carb">C 0g</span>
+        <span class="pill pill-g" id="ring-fat">G 0g</span>
+      </div>
+    </div>
+    <div class="ring-info">
+      <h3>Hoy</h3>
+      <p id="ring-label">0 / 2000 kcal</p>
+      <div class="goal-bar"><div class="goal-fill" id="goal-fill" style="width:0%"></div></div>
+      <p class="ring-count" id="ring-count">0 registros hoy</p>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-scan" onclick="switchTab('scan')">+ Añadir</button>
+    <button class="tab-btn"        id="tab-log"  onclick="switchTab('log')">Registro</button>
+  </div>
+
+  <div class="scroll-area" id="scroll-area">
+
+    <div id="panel-scan">
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-photo"   onclick="switchMode('photo')">📷 Foto comida</button>
+        <button class="mode-btn"        id="mode-barcode" onclick="switchMode('barcode')">▦ Código barras</button>
+      </div>
+
+      <div id="photo-section">
+        <div class="photo-drop" id="photo-drop" onclick="document.getElementById('photo-input').click()">
+          <span class="drop-icon">🍽️</span>
+          <div class="drop-title">Toca para hacer foto o elegir imagen</div>
+          <div class="drop-sub">Gemini estimará el plato y los macros</div>
+        </div>
+        <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+        <img id="photo-preview" class="preview-img" style="display:none" alt="preview">
+        <button class="retry-btn" id="retry-btn" style="display:none" onclick="retryPhoto()">🔄 Repetir foto</button>
+      </div>
+
+      <div id="barcode-section" style="display:none">
+        <div class="barcode-area">
+          <button class="scan-big-btn" onclick="openScanner()">
+            <span class="ico">▦</span>
+            Abrir cámara · Escanear
+            <span class="sub">Apunta al código de barras · OpenFoodFacts DB</span>
+          </button>
+          <div id="scanned-ok" class="scanned-ok" style="display:none"></div>
+          <div class="divider"><span>o introduce el código manualmente</span></div>
+          <div class="manual-row">
+            <input type="text" class="barcode-input" id="barcode-manual" inputmode="numeric" placeholder="8410525000128…" onkeydown="if(event.key==='Enter') lookupManual()">
+            <button class="go-btn" onclick="lookupManual()">Buscar</button>
+          </div>
+          <p style="font-size:10px;color:var(--dim);text-align:center;margin-top:-4px">El número aparece bajo el código de barras del envase</p>
+        </div>
+      </div>
+
+      <div class="loading" id="loading" style="display:none">
+        <div class="spinner"></div>
+        <p id="loading-text">Analizando…</p>
+      </div>
+      <div class="error-box" id="error-box" style="display:none"></div>
+
+      <div class="result-card" id="result-card" style="display:none">
+        <div class="result-name" id="res-name"></div>
+        <div class="result-sub"  id="res-sub"></div>
+        <div class="gram-row" id="gram-row" style="display:none">
+          <label>Cantidad (g):</label>
+          <input type="number" class="gram-input" id="gram-input" value="100" min="1" oninput="updateBarcodeCalc()">
+        </div>
+        <div class="macros-grid">
+          <div class="macro-box kcal"><div class="val" id="res-kcal">0</div><div class="lbl">kcal</div></div>
+          <div class="macro-box"><div class="val" id="res-prot">0</div><div class="lbl">prot g</div></div>
+          <div class="macro-box"><div class="val" id="res-carb">0</div><div class="lbl">carbs g</div></div>
+          <div class="macro-box"><div class="val" id="res-fat">0</div><div class="lbl">grasa g</div></div>
+        </div>
+        <div class="notes-txt" id="res-notes"></div>
+        <button class="confirm-btn" onclick="confirmAdd()">✓ Añadir al registro</button>
+      </div>
+    </div>
+
+    <div id="panel-log" style="display:none">
+      <div id="log-content"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const STORAGE_LOG  = 'calai_log_v3';
+const STORAGE_KEYS = 'calai_cfg_v3';
+let state = {
+  tab:'scan', mode:'photo',
+  log:  JSON.parse(localStorage.getItem(STORAGE_LOG)  || '[]'),
+  cfg:  JSON.parse(localStorage.getItem(STORAGE_KEYS) || '{"gemini":"","goal":2000}'),
+  result: null, per100: null,
+};
+function saveLog(){ localStorage.setItem(STORAGE_LOG,  JSON.stringify(state.log)); }
+function saveCfg(){ localStorage.setItem(STORAGE_KEYS, JSON.stringify(state.cfg)); }
+
+window.addEventListener('DOMContentLoaded', () => {
+  const d = new Date();
+  document.getElementById('header-date').textContent =
+    d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  updateRing();
+  if(!state.cfg.gemini) openSettings();
+});
+
+function switchTab(t){
+  state.tab=t;
+  document.getElementById('panel-scan').style.display = t==='scan'?'':'none';
+  document.getElementById('panel-log').style.display  = t==='log' ?'':'none';
+  document.getElementById('tab-scan').classList.toggle('active',t==='scan');
+  document.getElementById('tab-log').classList.toggle('active', t==='log');
+  if(t==='log') renderLog();
+}
+
+function switchMode(m){
+  state.mode=m;
+  document.getElementById('photo-section').style.display   = m==='photo'  ?'':'none';
+  document.getElementById('barcode-section').style.display = m==='barcode'?'':'none';
+  document.getElementById('mode-photo').classList.toggle('active',  m==='photo');
+  document.getElementById('mode-barcode').classList.toggle('active',m==='barcode');
+  hideResult(); hideError();
+}
+
+function updateRing(){
+  const today = new Date().toDateString();
+  const tl = state.log.filter(e=>e.dateKey===today);
+  const t  = tl.reduce((a,e)=>({kcal:a.kcal+e.kcal,protein:a.protein+e.protein,carbs:a.carbs+e.carbs,fat:a.fat+e.fat}),{kcal:0,protein:0,carbs:0,fat:0});
+  const goal = state.cfg.goal||2000;
+  const pct  = Math.min(t.kcal/goal*100,100);
+  const circ = 2*Math.PI*50;
+  document.getElementById('ring-arc').setAttribute('stroke-dasharray',`${circ*pct/100} ${circ*(1-pct/100)}`);
+  document.getElementById('ring-kcal').textContent = t.kcal;
+  document.getElementById('ring-prot').textContent = `P ${t.protein}g`;
+  document.getElementById('ring-carb').textContent = `C ${t.carbs}g`;
+  document.getElementById('ring-fat').textContent  = `G ${t.fat}g`;
+  document.getElementById('ring-label').textContent = `${t.kcal} / ${goal} kcal`;
+  document.getElementById('goal-fill').style.width  = pct+'%';
+  document.getElementById('ring-count').textContent = `${tl.length} registro${tl.length!==1?'s':''} hoy`;
+}
+
+async function handlePhoto(input){
+  const file=input.files[0]; if(!file) return;
+  hideError(); hideResult();
+  const url=URL.createObjectURL(file);
+  const prev=document.getElementById('photo-preview');
+  prev.src=url; prev.style.display='block';
+  document.getElementById('photo-drop').style.display='none';
+  document.getElementById('retry-btn').style.display='block';
+  if(!state.cfg.gemini){showError('Configura tu API key de Gemini en ⚙️');return;}
+  showLoading('Analizando imagen con Gemini…');
+  try{
+    const b64=await fileToBase64(file);
+    const data=await geminiVision(b64,state.cfg.gemini);
+    state.result={...data,source:'photo'};
+    document.getElementById('res-name').textContent=data.name;
+    document.getElementById('res-sub').textContent=data.quantity||'';
+    document.getElementById('gram-row').style.display='none';
+    document.getElementById('res-kcal').textContent=data.kcal;
+    document.getElementById('res-prot').textContent=data.protein;
+    document.getElementById('res-carb').textContent=data.carbs;
+    document.getElementById('res-fat').textContent=data.fat;
+    const confMap={alta:'✓ confianza alta',media:'~ confianza media',baja:'⚠ confianza baja'};
+    document.getElementById('res-notes').textContent=[data.notes,confMap[data.confidence]].filter(Boolean).join(' · ');
+    document.getElementById('result-card').style.display='';
+  }catch(e){showError(e.message);}
+  finally{hideLoading();}
+}
+
+function retryPhoto(){
+  document.getElementById('photo-preview').style.display='none';
+  document.getElementById('photo-drop').style.display='';
+  document.getElementById('retry-btn').style.display='none';
+  document.getElementById('photo-input').value='';
+  hideResult(); hideError();
+  document.getElementById('photo-input').click();
+}
+
+async function lookupManual(){
+  const code=document.getElementById('barcode-manual').value.trim();
+  if(!code) return;
+  await doBarcodeLookup(code);
+}
+
+async function doBarcodeLookup(code){
+  hideError(); hideResult();
+  document.getElementById('scanned-ok').style.display='';
+  document.getElementById('scanned-ok').textContent=`✓ Código: ${code}`;
+  showLoading('Buscando en OpenFoodFacts…');
+  try{
+    const r=await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+    const d=await r.json();
+    if(d.status!==1) throw new Error('Producto no encontrado. Prueba a introducirlo manualmente.');
+    const p=d.product, n=p.nutriments||{};
+    const per100={
+      kcal:    Math.round(n['energy-kcal_100g']??n['energy-kcal']??0),
+      protein: +(n.proteins_100g??0).toFixed(1),
+      carbs:   +(n.carbohydrates_100g??0).toFixed(1),
+      fat:     +(n.fat_100g??0).toFixed(1),
+    };
+    state.result={name:p.product_name||p.product_name_es||'Producto desconocido',brand:p.brands||'',serving:p.serving_size||'100g',barcode:code,per100,source:'barcode'};
+    state.per100=per100;
+    document.getElementById('res-name').textContent=state.result.name;
+    document.getElementById('res-sub').textContent=[state.result.brand,state.result.serving].filter(Boolean).join(' · ');
+    document.getElementById('gram-row').style.display='';
+    document.getElementById('gram-input').value=100;
+    updateBarcodeCalc();
+    document.getElementById('result-card').style.display='';
+  }catch(e){showError(e.message);}
+  finally{hideLoading();}
+}
+
+function updateBarcodeCalc(){
+  if(!state.per100) return;
+  const g=+document.getElementById('gram-input').value||100;
+  const p=state.per100;
+  document.getElementById('res-kcal').textContent=Math.round(p.kcal*g/100);
+  document.getElementById('res-prot').textContent=(p.protein*g/100).toFixed(1);
+  document.getElementById('res-carb').textContent=(p.carbs*g/100).toFixed(1);
+  document.getElementById('res-fat').textContent=(p.fat*g/100).toFixed(1);
+  document.getElementById('res-notes').textContent=`Valores por ${g}g`;
+}
+
+function confirmAdd(){
+  if(!state.result) return;
+  const r=state.result;
+  let entry;
+  if(r.source==='barcode'){
+    const g=+document.getElementById('gram-input').value||100;
+    const p=state.per100;
+    entry={id:Date.now(),source:'barcode',name:r.name,brand:r.brand||'',quantity:`${g}g`,
+      kcal:Math.round(p.kcal*g/100),protein:+(p.protein*g/100).toFixed(1),
+      carbs:+(p.carbs*g/100).toFixed(1),fat:+(p.fat*g/100).toFixed(1),
+      confidence:'alta',notes:`Código: ${r.barcode}`,
+      time:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
+      dateKey:new Date().toDateString()};
+  }else{
+    entry={id:Date.now(),source:'photo',name:r.name,brand:'',quantity:r.quantity,
+      kcal:r.kcal,protein:r.protein,carbs:r.carbs,fat:r.fat,
+      confidence:r.confidence,notes:r.notes||'',
+      time:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
+      dateKey:new Date().toDateString()};
+  }
+  state.log.unshift(entry); saveLog(); updateRing(); hideResult();
+  document.getElementById('photo-preview').style.display='none';
+  document.getElementById('photo-drop').style.display='';
+  document.getElementById('retry-btn').style.display='none';
+  document.getElementById('photo-input').value='';
+  document.getElementById('scanned-ok').style.display='none';
+  document.getElementById('barcode-manual').value='';
+  state.per100=null;
+  switchTab('log');
+}
+
+function renderLog(){
+  const today=new Date().toDateString();
+  const el=document.getElementById('log-content');
+  if(!state.log.length){el.innerHTML='<div class="log-empty">Sin registros aún.<br>Usa <strong>+ Añadir</strong> para empezar.</div>';return;}
+  const tl=state.log.filter(e=>e.dateKey===today);
+  const pl=state.log.filter(e=>e.dateKey!==today);
+  let html='';
+  if(tl.length){
+    const t=tl.reduce((a,e)=>({kcal:a.kcal+e.kcal,protein:a.protein+e.protein,carbs:a.carbs+e.carbs,fat:a.fat+e.fat}),{kcal:0,protein:0,carbs:0,fat:0});
+    html+=`<div class="log-section-title">Hoy · ${tl.length} comidas · ${t.kcal} kcal</div>`;
+    tl.forEach(e=>html+=entryHTML(e));
+  }
+  if(pl.length){
+    html+='<div class="log-section-title" style="margin-top:14px">Anteriores</div>';
+    pl.forEach(e=>html+=entryHTML(e));
+  }
+  el.innerHTML=html;
+}
+
+function entryHTML(e){
+  const ico=e.source==='barcode'?'▦':'📷';
+  const cc=e.confidence==='alta'?'conf-alta':e.confidence==='media'?'conf-media':'conf-baja';
+  const cb=e.confidence?`<span class="conf-badge ${cc}">${e.confidence}</span>`:'';
+  return `<div class="entry-card">
+    <div class="entry-top">
+      <span class="entry-ico">${ico}</span>
+      <div class="entry-info">
+        <span class="entry-name">${e.name}</span>
+        ${e.brand?`<span class="entry-brand">${e.brand}</span>`:''}
+        <span class="entry-qty">${e.quantity}</span>
+      </div>
+      <div class="entry-kcal">${e.kcal}<span> kcal</span></div>
+      <button class="del-btn" onclick="deleteEntry(${e.id})">✕</button>
+    </div>
+    <div class="entry-macros"><span>P ${e.protein}g</span><span>C ${e.carbs}g</span><span>G ${e.fat}g</span>${cb}</div>
+    ${e.notes?`<div class="entry-note">${e.notes}</div>`:''}
+    <span class="entry-time">${e.time}</span>
+  </div>`;
+}
+
+function deleteEntry(id){
+  state.log=state.log.filter(e=>e.id!==id);
+  saveLog(); updateRing(); renderLog();
+}
+
+/* ── Scanner ZXing ── */
+let scanReader=null, scanDetected=false;
+
+function openScanner(){
+  document.getElementById('scanner-view').classList.remove('hidden');
+  document.getElementById('scan-success-overlay').classList.add('hidden');
+  document.getElementById('scan-status').textContent='Cargando escáner…';
+  scanDetected=false;
+  startZXing();
+}
+
+function closeScanner(){
+  stopZXing();
+  document.getElementById('scanner-view').classList.add('hidden');
+}
+
+async function startZXing(){
+  try{
+    await loadScript('https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js');
+    const ZX=window.ZXing;
+    const hints=new Map();
+    hints.set(ZX.DecodeHintType.POSSIBLE_FORMATS,[
+      ZX.BarcodeFormat.EAN_13,ZX.BarcodeFormat.EAN_8,
+      ZX.BarcodeFormat.CODE_128,ZX.BarcodeFormat.CODE_39,
+      ZX.BarcodeFormat.UPC_A,ZX.BarcodeFormat.UPC_E,
+    ]);
+    hints.set(ZX.DecodeHintType.TRY_HARDER,true);
+    scanReader=new ZX.BrowserMultiFormatReader(hints,400);
+    document.getElementById('scan-status').textContent='Apunta al código de barras';
+    await scanReader.decodeFromVideoDevice(undefined,document.getElementById('scanner-video'),(result)=>{
+      if(result&&!scanDetected){
+        scanDetected=true;
+        document.getElementById('scan-success-overlay').classList.remove('hidden');
+        document.getElementById('scan-status').textContent='¡Código detectado!';
+        navigator.vibrate&&navigator.vibrate(120);
+        stopZXing();
+        setTimeout(()=>{closeScanner();doBarcodeLookup(result.getText());},600);
+      }
+    });
+  }catch(err){
+    document.getElementById('scan-status').textContent='⚠️ '+(err.message||'No se pudo acceder a la cámara');
+  }
+}
+
+function stopZXing(){try{scanReader&&scanReader.reset();}catch{}}
+
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    if(document.querySelector(`script[src="${src}"]`)){res();return;}
+    const s=document.createElement('script');
+    s.src=src; s.onload=res; s.onerror=rej;
+    document.head.appendChild(s);
+  });
+}
+
+/* ── Gemini Vision ── */
+async function geminiVision(base64,apiKey){
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      contents:[{parts:[
+        {inlineData:{mimeType:'image/jpeg',data:base64}},
+        {text:'Analiza esta foto de comida. Responde SOLO con JSON valido, sin markdown ni texto extra:\n{"name":"nombre","quantity":"cantidad con unidad","kcal":0,"protein":0,"carbs":0,"fat":0,"confidence":"alta|media|baja","notes":"observacion breve"}\nEstima macros totales para la cantidad visible.'},
+      ]}],
+      generationConfig:{maxOutputTokens:400,temperature:0.1},
+    }),
+  });
+  if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Error Gemini API');}
+  const d=await res.json();
+  let text=d.candidates?.[0]?.content?.parts?.[0]?.text?.trim()||'';
+  text=text.replace(/```json|```/g,'').trim();
+  return JSON.parse(text);
+}
+
+/* ── Settings ── */
+function openSettings(){
+  document.getElementById('cfg-gemini').value=state.cfg.gemini||'';
+  document.getElementById('cfg-goal').value=state.cfg.goal||2000;
+  document.getElementById('settings-modal').classList.remove('hidden');
+}
+function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
+function saveSettings(){
+  state.cfg.gemini=document.getElementById('cfg-gemini').value.trim();
+  state.cfg.goal=+document.getElementById('cfg-goal').value||2000;
+  saveCfg(); updateRing(); closeSettings();
+}
+
+/* ── Helpers ── */
+function showLoading(msg){document.getElementById('loading-text').textContent=msg;document.getElementById('loading').style.display='';}
+function hideLoading(){document.getElementById('loading').style.display='none';}
+function showError(msg){const el=document.getElementById('error-box');el.textContent='⚠️ '+msg;el.style.display='';}
+function hideError(){document.getElementById('error-box').style.display='none';}
+function hideResult(){document.getElementById('result-card').style.display='none';state.result=null;}
+function fileToBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=rej; r.readAsDataURL(file);
+  });
+}
+</script>
+</body>
+</html>
