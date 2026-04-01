@@ -694,7 +694,8 @@ const wCfg = () => localStorage.setItem(LS_CFG, JSON.stringify(S.cfg));
 // ─────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   updateWheel();
-  if (!S.cfg.key) openSettings();
+  // Siempre arranca en el resumen del día (tab Add)
+  // Settings solo se abre si el usuario pulsa ⚙
 });
 
 // ─────────────────────────────────────────────
