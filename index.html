@@ -251,9 +251,97 @@ input[type=file] { display: none; }
 .reset-btns { display: flex; gap: 8px; }
 .rb-yes { flex: 1; padding: 12px; background: var(--red); border: none; border-radius: 10px; font-size: 13px; font-weight: 700; color: #fff; cursor: pointer; }
 .rb-no  { flex: 1; padding: 12px; background: none; border: 1px solid var(--border); border-radius: 10px; font-size: 12px; color: var(--muted); cursor: pointer; }
+
+/* ── Add product modal ── */
+#addprod-sheet { position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:250; display:flex; align-items:flex-end; }
+#addprod-sheet.off { display:none; }
+.addprod-box { background:var(--s1); border:1px solid var(--border); border-radius:20px 20px 0 0; padding:22px 20px; width:100%; max-width:430px; margin:0 auto; padding-bottom:calc(var(--safe-b) + 22px); max-height:88dvh; overflow-y:auto; }
+.addprod-box h3 { font-size:15px; font-weight:700; margin-bottom:4px; }
+.addprod-box .ap-sub { font-size:10px; color:var(--muted); margin-bottom:16px; }
+.ap-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.ap-field label { font-size:10px; color:var(--muted); display:block; margin-bottom:4px; }
+.ap-field input { width:100%; background:var(--s2); border:1px solid var(--border); border-radius:8px; padding:9px 11px; color:var(--text); font-size:14px; font-weight:500; outline:none; -webkit-appearance:none; text-align:center; }
+.ap-field input:focus { border-color:var(--accent); }
+.ap-field.ap-name input { text-align:left; }
+.ap-field.ap-full { grid-column:1/-1; }
+.ap-actions { display:flex; gap:8px; margin-top:14px; }
+.ap-save { flex:2; padding:13px; background:var(--accent); border:none; border-radius:10px; font-size:13px; font-weight:700; color:#000; cursor:pointer; }
+.ap-cancel { flex:1; padding:13px; background:none; border:1px solid var(--border); border-radius:10px; color:var(--muted); font-size:11px; cursor:pointer; }
+
+/* ── Calculator tab ── */
+.calc-wrap { padding-top:14px; }
+.calc-section { background:var(--s1); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:12px; }
+.calc-section h3 { font-size:13px; font-weight:700; margin-bottom:14px; color:var(--text); }
+.calc-row { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+.calc-row:last-child { margin-bottom:0; }
+.calc-row label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+.calc-row input[type=number], .calc-row select { width:100%; background:var(--s2); border:1px solid var(--border); border-radius:9px; padding:10px 13px; color:var(--text); font-size:14px; font-family:'Work Sans',sans-serif; outline:none; -webkit-appearance:none; }
+.calc-row input:focus, .calc-row select:focus { border-color:var(--accent); }
+.calc-row select option { background:var(--s2); }
+.sex-row { display:flex; gap:8px; }
+.sex-btn { flex:1; padding:10px; border-radius:9px; border:1px solid var(--border); background:none; color:var(--muted); font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; font-family:'Work Sans',sans-serif; }
+.sex-btn.on { background:#001e22; border-color:var(--accent); color:var(--accent); }
+.calc-btn { width:100%; padding:13px; background:var(--accent); border:none; border-radius:12px; font-size:14px; font-weight:700; color:#000; cursor:pointer; margin-top:4px; font-family:'Work Sans',sans-serif; }
+.calc-result { background:var(--s1); border:1px solid var(--accent); border-radius:16px; padding:16px; margin-bottom:12px; }
+.cr-title { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:12px; }
+.cr-kcal { font-size:36px; font-weight:700; color:var(--accent); line-height:1; margin-bottom:4px; }
+.cr-kcal span { font-size:13px; font-weight:400; color:var(--muted); }
+.cr-sub { font-size:11px; color:var(--muted); margin-bottom:14px; }
+.cr-macros { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+.cr-macro { background:var(--s2); border-radius:9px; padding:10px 8px; text-align:center; }
+.cr-macro .v { font-size:18px; font-weight:700; }
+.cr-macro .l { font-size:9px; color:var(--muted); margin-top:2px; }
+.cr-note { font-size:10px; color:var(--dim); line-height:1.6; }
+.apply-btn { width:100%; padding:12px; background:var(--s2); border:1px solid var(--accent); border-radius:10px; color:var(--accent); font-size:13px; font-weight:600; cursor:pointer; font-family:'Work Sans',sans-serif; }
+.apply-btn:hover { background:#001e22; }
+.obj-btns { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.obj-btn { padding:9px 4px; border-radius:9px; border:1px solid var(--border); background:none; color:var(--muted); font-size:10px; font-weight:500; cursor:pointer; transition:all .15s; font-family:'Work Sans',sans-serif; line-height:1.3; }
+.obj-btn.on { background:#001e22; border-color:var(--accent); color:var(--accent); }
 </style>
 </head>
 <body>
+
+
+<!-- ── Add unknown product ── -->
+<div id="addprod-sheet" class="off">
+  <div class="addprod-box">
+    <h3>Añadir producto a Mi BD</h3>
+    <p class="ap-sub" id="ap-code-label">Código: —</p>
+    <div class="ap-field ap-full ap-name" style="margin-bottom:8px">
+      <label>Nombre del producto</label>
+      <input type="text" id="ap-name" placeholder="Ej: Galletas María">
+    </div>
+    <div class="ap-field ap-full" style="margin-bottom:4px">
+      <label>Valores por</label>
+    </div>
+    <div class="sex-row" style="margin-bottom:12px">
+      <button class="sex-btn on" id="ap-per-100" onclick="apSetPer('100')">100g</button>
+      <button class="sex-btn"    id="ap-per-unit" onclick="apSetPer('unit')">Por unidad</button>
+    </div>
+    <div class="ap-grid">
+      <div class="ap-field">
+        <label>Calorías (kcal)</label>
+        <input type="number" id="ap-kcal" placeholder="0" min="0">
+      </div>
+      <div class="ap-field">
+        <label>Proteína (g)</label>
+        <input type="number" id="ap-prot" placeholder="0" min="0" step="0.1">
+      </div>
+      <div class="ap-field">
+        <label>Carbos (g)</label>
+        <input type="number" id="ap-carb" placeholder="0" min="0" step="0.1">
+      </div>
+      <div class="ap-field">
+        <label>Grasa (g)</label>
+        <input type="number" id="ap-fat"  placeholder="0" min="0" step="0.1">
+      </div>
+    </div>
+    <div class="ap-actions">
+      <button class="ap-save"   onclick="saveNewProduct()">✓ Guardar en Mis productos</button>
+      <button class="ap-cancel" onclick="hide('addprod-sheet')">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Scanner ── -->
 <div id="scanner" class="off">
@@ -379,7 +467,8 @@ input[type=file] { display: none; }
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab on"  id="t-add" onclick="switchTab('add')">+ Añadir</button>
-    <button class="tab"     id="t-log" onclick="switchTab('log')">Registro</button>
+    <button class="tab"     id="t-log"  onclick="switchTab('log')">Registro</button>
+    <button class="tab"     id="t-calc" onclick="switchTab('calc')">Calculadora</button>
   </div>
 
   <div class="scroll" id="scroll-area">
@@ -494,6 +583,89 @@ input[type=file] { display: none; }
       <div id="log-body"></div>
     </div>
 
+    <!-- CALC PANEL -->
+    <div id="panel-calc" style="display:none">
+      <div class="calc-wrap">
+        <div class="calc-section">
+          <h3>Tus datos</h3>
+          <div class="calc-row">
+            <label>Sexo</label>
+            <div class="sex-row">
+              <button class="sex-btn on" id="calc-male"   onclick="calcSetSex('M')">♂ Hombre</button>
+              <button class="sex-btn"    id="calc-female" onclick="calcSetSex('F')">♀ Mujer</button>
+            </div>
+          </div>
+          <div class="calc-row">
+            <label>Edad (años)</label>
+            <input type="number" id="calc-age" placeholder="30" min="5" max="100">
+          </div>
+          <div class="calc-row">
+            <label>Peso (kg)</label>
+            <input type="number" id="calc-weight" placeholder="70" min="20" max="300" step="0.1">
+          </div>
+          <div class="calc-row">
+            <label>Altura (cm)</label>
+            <input type="number" id="calc-height" placeholder="175" min="50" max="250">
+          </div>
+          <div class="calc-row">
+            <label>Nivel de actividad</label>
+            <select id="calc-activity">
+              <option value="1.2">Sedentario — poco o ningún ejercicio</option>
+              <option value="1.375">Ligero — ejercicio 1-3 días/semana</option>
+              <option value="1.55" selected>Moderado — ejercicio 3-5 días/semana</option>
+              <option value="1.725">Activo — ejercicio 6-7 días/semana</option>
+              <option value="1.9">Muy activo — dos entrenamientos al día</option>
+            </select>
+          </div>
+          <div class="calc-row">
+            <label>Objetivo</label>
+            <div class="obj-btns">
+              <button class="obj-btn" id="obj-lose"    onclick="calcSetObj('lose')">🔽 Perder<br>peso</button>
+              <button class="obj-btn on" id="obj-maint"  onclick="calcSetObj('maint')">⚖️ Mantener<br>peso</button>
+              <button class="obj-btn" id="obj-gain"    onclick="calcSetObj('gain')">🔼 Ganar<br>músculo</button>
+            </div>
+          </div>
+          <button class="calc-btn" onclick="runCalc()">Calcular mis calorías →</button>
+        </div>
+
+        <div class="calc-result off" id="calc-result">
+          <div class="cr-title">Tu necesidad calórica estimada</div>
+          <div class="cr-kcal" id="cr-kcal">0 <span>kcal/día</span></div>
+          <div class="cr-sub"  id="cr-sub"></div>
+          <div class="cr-macros">
+            <div class="cr-macro">
+              <div class="v" id="cr-prot" style="color:var(--green)">0g</div>
+              <div class="l">Proteína</div>
+            </div>
+            <div class="cr-macro">
+              <div class="v" id="cr-carb" style="color:var(--yellow)">0g</div>
+              <div class="l">Carbos</div>
+            </div>
+            <div class="cr-macro">
+              <div class="v" id="cr-fat" style="color:var(--accent)">0g</div>
+              <div class="l">Grasa</div>
+            </div>
+          </div>
+          <div class="cr-note" id="cr-note"></div>
+          <button class="apply-btn" style="margin-top:12px" onclick="applyCalcToGoal()">
+            ↑ Aplicar como objetivo diario
+          </button>
+        </div>
+
+        <div class="calc-section">
+          <h3>Fórmula</h3>
+          <p style="font-size:11px;color:var(--muted);line-height:1.7">
+            Usa la ecuación de <strong style="color:var(--text)">Harris-Benedict</strong> para calcular 
+            tu Tasa Metabólica Basal (TMB) y la multiplica por tu factor de actividad física (PAL).<br><br>
+            <strong style="color:var(--text)">Hombre:</strong> TMB = 88.36 + (13.4 × kg) + (4.8 × cm) − (5.7 × edad)<br>
+            <strong style="color:var(--text)">Mujer:</strong> TMB = 447.6 + (9.25 × kg) + (3.1 × cm) − (4.3 × edad)<br><br>
+            Los macros se calculan con distribución estándar: 30% proteína · 40% carbos · 30% grasa, 
+            ajustable en ⚙ Configuración.
+          </p>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -544,10 +716,12 @@ function hideResult()  { $('result-card').style.display = 'none'; S.result = nul
 // ─────────────────────────────────────────────
 function switchTab(t) {
   S.tab = t;
-  $('panel-add').style.display = t === 'add' ? '' : 'none';
-  $('panel-log').style.display = t === 'log' ? '' : 'none';
-  $('t-add').classList.toggle('on', t === 'add');
-  $('t-log').classList.toggle('on', t === 'log');
+  $('panel-add').style.display  = t === 'add'  ? '' : 'none';
+  $('panel-log').style.display  = t === 'log'  ? '' : 'none';
+  $('panel-calc').style.display = t === 'calc' ? '' : 'none';
+  $('t-add').classList.toggle('on',  t === 'add');
+  $('t-log').classList.toggle('on',  t === 'log');
+  $('t-calc').classList.toggle('on', t === 'calc');
   if (t === 'log') renderLog();
 }
 function switchMode(m) {
@@ -752,7 +926,12 @@ async function fetchBarcode(code) {
     if (!ru.ok) throw new Error('Error USDA');
     const du = await ru.json();
     const food = du.foods?.[0];
-    if (!food) throw new Error('Producto no encontrado. Introdúcelo manualmente con ✏️ Manual.');
+    if (!food) {
+      hideLoad();
+      // Offer to add manually
+      openAddProduct(code);
+      return;
+    }
     const getNutr = (id) => food.foodNutrients?.find(n => n.nutrientId === id)?.value || 0;
     const per100 = {
       kcal:    Math.round(getNutr(1008)),
@@ -1079,6 +1258,148 @@ function saveSettings() {
     fat:  +$('s-fat').value  || 30,
   };
   wCfg(); updateWheel(); closeSettings();
+}
+
+
+// ─────────────────────────────────────────────
+//  ADD UNKNOWN PRODUCT TO MY DB
+// ─────────────────────────────────────────────
+let _apCode = '';
+let _apPer  = '100'; // '100' or 'unit'
+
+function openAddProduct(code) {
+  _apCode = code || '';
+  _apPer  = '100';
+  $('ap-code-label').textContent = code ? `Código: ${code}` : 'Sin código de barras';
+  $('ap-name').value = '';
+  ['ap-kcal','ap-prot','ap-carb','ap-fat'].forEach(id => $(id).value = '');
+  $('ap-per-100').classList.add('on');
+  $('ap-per-unit').classList.remove('on');
+  show('addprod-sheet');
+}
+
+function apSetPer(v) {
+  _apPer = v;
+  $('ap-per-100').classList.toggle('on',  v === '100');
+  $('ap-per-unit').classList.toggle('on', v === 'unit');
+}
+
+function saveNewProduct() {
+  const name = $('ap-name').value.trim();
+  if (!name) { alert('Introduce el nombre del producto.'); return; }
+  const kcal    = +$('ap-kcal').value || 0;
+  const protein = +$('ap-prot').value || 0;
+  const carbs   = +$('ap-carb').value || 0;
+  const fat     = +$('ap-fat').value  || 0;
+  const isUnit  = _apPer === 'unit';
+
+  const entry = {
+    id:      _apCode || Date.now().toString(),
+    barcode: _apCode,
+    name,
+    brand:   '',
+    serving: isUnit ? '1 unidad' : '100 g',
+    per100:  isUnit
+      ? { kcal, protein, carbs, fat }          // stored as-is, treated as per-unit
+      : { kcal, protein, carbs, fat },
+    isUnit,
+  };
+
+  const idx = S.mydb.findIndex(p => p.id === entry.id);
+  if (idx >= 0) S.mydb[idx] = entry; else S.mydb.unshift(entry);
+  wMyDB();
+  hide('addprod-sheet');
+  // Show it in result card so user can adjust grams/add to log
+  setResultFromDB(entry, 'mydb', _apCode);
+  switchMode('barcode');
+}
+
+// ─────────────────────────────────────────────
+//  CALCULATOR (Harris-Benedict)
+// ─────────────────────────────────────────────
+let _calcSex = 'M';
+let _calcObj = 'maint';
+
+function calcSetSex(s) {
+  _calcSex = s;
+  $('calc-male').classList.toggle('on',   s === 'M');
+  $('calc-female').classList.toggle('on', s === 'F');
+}
+
+function calcSetObj(o) {
+  _calcObj = o;
+  ['lose','maint','gain'].forEach(x => $('obj-' + x).classList.toggle('on', x === o));
+}
+
+function runCalc() {
+  const age    = +$('calc-age').value;
+  const weight = +$('calc-weight').value;
+  const height = +$('calc-height').value;
+  const act    = +$('calc-activity').value;
+
+  if (!age || !weight || !height) {
+    $('calc-result').classList.add('off');
+    alert('Completa todos los campos.'); return;
+  }
+
+  // Harris-Benedict TMB
+  let tmb;
+  if (_calcSex === 'M') {
+    tmb = 88.36 + (13.4 * weight) + (4.8 * height) - (5.7 * age);
+  } else {
+    tmb = 447.6 + (9.25 * weight) + (3.1 * height) - (4.3 * age);
+  }
+
+  // TDEE = TMB × actividad
+  let tdee = Math.round(tmb * act);
+
+  // Ajuste por objetivo
+  const objAdj = { lose: -500, maint: 0, gain: 250 };
+  const goalKcal = tdee + (objAdj[_calcObj] || 0);
+
+  // IMC
+  const imc = (weight / ((height / 100) ** 2)).toFixed(1);
+  let imcLabel = '';
+  if      (imc < 18.5)  imcLabel = 'Bajo peso';
+  else if (imc < 25)    imcLabel = 'Peso normal ✓';
+  else if (imc < 30)    imcLabel = 'Sobrepeso';
+  else                  imcLabel = 'Obesidad';
+
+  // Macros con distribución configurada
+  const pct = { p: S.cfg.prot / 100, c: S.cfg.carb / 100, f: S.cfg.fat / 100 };
+  const protG = Math.round((goalKcal * pct.p) / 4);
+  const carbG = Math.round((goalKcal * pct.c) / 4);
+  const fatG  = Math.round((goalKcal * pct.f) / 9);
+
+  const objLabels = { lose: '(-500 kcal para perder ~0.5 kg/semana)', maint: '(mantenimiento)', gain: '(+250 kcal para ganar masa)' };
+
+  $('cr-kcal').innerHTML = `${goalKcal} <span>kcal/día</span>`;
+  $('cr-sub').textContent  = `TMB: ${Math.round(tmb)} kcal · TDEE: ${tdee} kcal ${objLabels[_calcObj]}`;
+  $('cr-prot').textContent = protG + 'g';
+  $('cr-carb').textContent = carbG + 'g';
+  $('cr-fat').textContent  = fatG  + 'g';
+  $('cr-note').innerHTML   = `IMC: <strong style="color:var(--text)">${imc}</strong> — ${imcLabel}<br>
+Distribución: ${S.cfg.prot}% proteína · ${S.cfg.carb}% carbos · ${S.cfg.fat}% grasa<br>
+<span style="color:var(--dim)">Basado en Harris-Benedict. Consulta a tu médico.</span>`;
+
+  // Store for apply button
+  $('calc-result')._data = { goal: goalKcal, prot: S.cfg.prot, carb: S.cfg.carb, fat: S.cfg.fat };
+  $('calc-result').classList.remove('off');
+}
+
+function applyCalcToGoal() {
+  const d = $('calc-result')._data;
+  if (!d) return;
+  S.cfg.goal = d.goal;
+  S.cfg.prot = d.prot;
+  S.cfg.carb = d.carb;
+  S.cfg.fat  = d.fat;
+  wCfg(); updateWheel();
+  // Visual feedback
+  const btn = document.querySelector('.apply-btn');
+  btn.textContent = '✓ Aplicado como objetivo';
+  btn.style.color = 'var(--green)';
+  setTimeout(() => { btn.textContent = '↑ Aplicar como objetivo diario'; btn.style.color = ''; }, 2000);
 }
 
 // ─────────────────────────────────────────────
