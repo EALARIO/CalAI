@@ -226,6 +226,22 @@ input[type=file] { display: none; }
 .key-note { font-size: 9px; color: var(--dim); text-align: center; margin-top: 12px; line-height: 1.7; }
 .api-link { color: var(--accent); text-decoration: none; }
 
+/* ── My DB panel ── */
+.mydb-empty { text-align:center; color:var(--dim); padding:30px 0; font-size:11px; line-height:2; }
+.mydb-item { background:var(--s1); border:1px solid var(--border); border-radius:12px; padding:11px 13px; margin-bottom:6px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:border-color .15s; }
+.mydb-item:hover { border-color:var(--accent); }
+.mydb-item-info { flex:1; min-width:0; }
+.mydb-item-name  { font-size:13px; font-weight:500; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mydb-item-macros { font-size:10px; color:var(--muted); margin-top:2px; }
+.mydb-item-kcal { font-size:16px; font-weight:700; color:var(--accent); flex-shrink:0; }
+.mydb-del { background:none; border:none; color:var(--dim); font-size:13px; cursor:pointer; padding:2px 4px; flex-shrink:0; }
+.mydb-del:hover { color:var(--red); }
+.source-badge { font-size:9px; padding:2px 6px; border-radius:4px; font-weight:500; }
+.badge-off  { background:#001e22; color:var(--accent); }
+.badge-usda { background:#1a1000; color:var(--yellow); }
+.badge-mydb { background:#1a001a; color:#cc88ff; }
+.save-db-btn { width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); background:none; color:var(--muted); font-size:11px; font-weight:500; cursor:pointer; margin-bottom:10px; transition:all .15s; display:flex; align-items:center; justify-content:center; gap:6px; }
+.save-db-btn:hover { border-color:#cc88ff; color:#cc88ff; }
 /* ── Reset confirm ── */
 #reset-sheet { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 24px; }
 #reset-sheet.off { display: none; }
@@ -374,6 +390,7 @@ input[type=file] { display: none; }
         <button class="subtab on" id="st-photo"   onclick="switchMode('photo')">📷 Foto</button>
         <button class="subtab"    id="st-barcode"  onclick="switchMode('barcode')">▦ Código</button>
         <button class="subtab"    id="st-manual"   onclick="switchMode('manual')">✏️ Manual</button>
+        <button class="subtab"    id="st-mydb"    onclick="switchMode('mydb')">⭐ Mis productos</button>
       </div>
 
       <!-- PHOTO -->
@@ -440,6 +457,12 @@ input[type=file] { display: none; }
         </div>
       </div>
 
+      <!-- MY DB -->
+      <div id="mode-mydb" style="display:none">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;margin-top:2px">Toca un producto para añadirlo al registro de hoy.</div>
+        <div id="mydb-list"></div>
+      </div>
+
       <!-- Loading / Error / Result -->
       <div class="loading" id="loading" style="display:none">
         <div class="spinner"></div>
@@ -462,6 +485,7 @@ input[type=file] { display: none; }
         </div>
         <div class="note-txt" id="rc-note"></div>
         <button class="confirm-btn" onclick="confirmAdd()">✓ Añadir al registro</button>
+        <button class="save-db-btn" onclick="saveToMyDB()" id="save-db-btn" style="display:none">⭐ Guardar en Mis productos</button>
       </div>
     </div>
 
@@ -484,8 +508,9 @@ const defCfg = { key: '', goal: 2000, prot: 30, carb: 40, fat: 30 };
 
 let S = {
   tab: 'add', mode: 'photo',
-  log: JSON.parse(localStorage.getItem(LS_LOG) || '[]'),
-  cfg: { ...defCfg, ...JSON.parse(localStorage.getItem(LS_CFG) || '{}') },
+  log:   JSON.parse(localStorage.getItem(LS_LOG)   || '[]'),
+  cfg:   { ...defCfg, ...JSON.parse(localStorage.getItem(LS_CFG) || '{}') },
+  mydb:  JSON.parse(localStorage.getItem('calai_mydb_v1') || '[]'),
   result: null,
   per100: null,
 };
@@ -527,11 +552,12 @@ function switchTab(t) {
 }
 function switchMode(m) {
   S.mode = m;
-  ['photo','barcode','manual'].forEach(x => {
+  ['photo','barcode','manual','mydb'].forEach(x => {
     $('mode-' + x).style.display = x === m ? '' : 'none';
     $('st-' + x).classList.toggle('on', x === m);
   });
   hideResult(); hideErr();
+  if (m === 'mydb') renderMyDB();
 }
 
 // ─────────────────────────────────────────────
@@ -630,7 +656,7 @@ Formato exacto:
 - Si no puedes ver comida, devuelve kcal:0 y confidence:"baja"`;
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -674,7 +700,7 @@ Formato exacto:
 }
 
 // ─────────────────────────────────────────────
-//  BARCODE — OpenFoodFacts + ZXing
+//  BARCODE — Local DB → OpenFoodFacts → USDA fallback
 // ─────────────────────────────────────────────
 async function bcLookup() {
   const code = $('bc-manual').value.trim(); if (!code) return;
@@ -685,34 +711,80 @@ async function fetchBarcode(code) {
   hideErr(); hideResult();
   $('bc-ok').style.display = '';
   $('bc-ok').textContent = `✓ Código: ${code}`;
+
+  // 1. Buscar en base de datos local primero
+  const local = S.mydb.find(p => p.barcode === code);
+  if (local) {
+    setResultFromDB(local, 'mydb', code);
+    return;
+  }
+
+  // 2. OpenFoodFacts
   showLoad('Buscando en OpenFoodFacts…');
   try {
     const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
-    if (!r.ok) throw new Error('Error al conectar con OpenFoodFacts');
-    const d = await r.json();
-    if (d.status !== 1) throw new Error('Producto no encontrado en la base de datos.');
-    const p = d.product, n = p.nutriments || {};
-    S.per100 = {
-      kcal:    Math.round(n['energy-kcal_100g'] ?? n['energy-kcal'] ?? 0),
-      protein: +(n.proteins_100g      ?? 0).toFixed(1),
-      carbs:   +(n.carbohydrates_100g ?? 0).toFixed(1),
-      fat:     +(n.fat_100g           ?? 0).toFixed(1),
+    if (r.ok) {
+      const d = await r.json();
+      if (d.status === 1) {
+        const p = d.product, n = p.nutriments || {};
+        const per100 = {
+          kcal:    Math.round(n['energy-kcal_100g'] ?? n['energy-kcal'] ?? 0),
+          protein: +(n.proteins_100g      ?? 0).toFixed(1),
+          carbs:   +(n.carbohydrates_100g ?? 0).toFixed(1),
+          fat:     +(n.fat_100g           ?? 0).toFixed(1),
+        };
+        setResultFromDB({
+          name:    p.product_name || p.generic_name || 'Producto',
+          brand:   p.brands || '',
+          serving: p.serving_size || '100 g',
+          barcode: code, per100,
+        }, 'off', code);
+        return;
+      }
+    }
+  } catch(_) {}
+
+  // 3. USDA FoodData Central como fallback
+  showLoad('No encontrado en OpenFoodFacts. Buscando en USDA…');
+  try {
+    // Buscar por UPC en USDA
+    const ru = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${code}&api_key=DEMO_KEY&pageSize=1`);
+    if (!ru.ok) throw new Error('Error USDA');
+    const du = await ru.json();
+    const food = du.foods?.[0];
+    if (!food) throw new Error('Producto no encontrado en OpenFoodFacts ni USDA.
+Intenta introducir los datos manualmente con ✏️ Manual.');
+    const getNutr = (id) => food.foodNutrients?.find(n => n.nutrientId === id)?.value || 0;
+    const per100 = {
+      kcal:    Math.round(getNutr(1008)),
+      protein: +getNutr(1003).toFixed(1),
+      carbs:   +getNutr(1005).toFixed(1),
+      fat:     +getNutr(1004).toFixed(1),
     };
-    S.result = {
-      source:  'barcode',
-      name:    p.product_name || p.generic_name || 'Producto',
-      brand:   p.brands   || '',
-      serving: p.serving_size || '100 g',
-      barcode: code,
-    };
-    $('rc-name').textContent = S.result.name;
-    $('rc-sub').textContent  = [S.result.brand, S.result.serving].filter(Boolean).join(' · ');
-    $('gram-row').style.display = '';
-    $('gram-inp').value = 100;
-    bcRecalc();
-    $('result-card').style.display = '';
+    setResultFromDB({
+      name:    food.description || 'Producto USDA',
+      brand:   food.brandOwner || '',
+      serving: '100 g',
+      barcode: code, per100,
+    }, 'usda', code);
   } catch(e) { showErr(e.message); }
   finally { hideLoad(); }
+}
+
+function setResultFromDB(prod, source, code) {
+  hideLoad();
+  S.per100 = prod.per100;
+  S.result = { source: 'barcode', name: prod.name, brand: prod.brand || '', serving: prod.serving || '100g', barcode: code, dbSource: source };
+  const srcLabel = { off: 'OpenFoodFacts', usda: 'USDA', mydb: 'Mis productos' }[source] || '';
+  const srcClass = { off: 'badge-off', usda: 'badge-usda', mydb: 'badge-mydb' }[source] || '';
+  $('rc-name').textContent = prod.name;
+  $('rc-sub').innerHTML = [prod.brand, prod.serving].filter(Boolean).join(' · ')
+    + (srcLabel ? ` <span class="source-badge ${srcClass}">${srcLabel}</span>` : '');
+  $('gram-row').style.display = '';
+  $('gram-inp').value = 100;
+  bcRecalc();
+  $('result-card').style.display = '';
+  $('save-db-btn').style.display = source !== 'mydb' ? '' : 'none';
 }
 
 function bcRecalc() {
@@ -723,7 +795,61 @@ function bcRecalc() {
   $('rc-prot').textContent = (p.protein * g / 100).toFixed(1);
   $('rc-carb').textContent = (p.carbs   * g / 100).toFixed(1);
   $('rc-fat').textContent  = (p.fat     * g / 100).toFixed(1);
-  $('rc-note').textContent = `Valores por ${g}g · OpenFoodFacts`;
+  $('rc-note').textContent = `Valores por ${g}g`;
+}
+
+// ─────────────────────────────────────────────
+//  MY DB — Base de datos local de productos
+// ─────────────────────────────────────────────
+const LS_MYDB = 'calai_mydb_v1';
+const wMyDB = () => localStorage.setItem(LS_MYDB, JSON.stringify(S.mydb));
+
+function saveToMyDB() {
+  if (!S.result || !S.per100) return;
+  const existing = S.mydb.findIndex(p => p.barcode === S.result.barcode && p.barcode);
+  const entry = {
+    id:      S.result.barcode || Date.now().toString(),
+    barcode: S.result.barcode || '',
+    name:    S.result.name,
+    brand:   S.result.brand || '',
+    serving: S.result.serving || '100g',
+    per100:  { ...S.per100 },
+  };
+  if (existing >= 0) S.mydb[existing] = entry;
+  else S.mydb.unshift(entry);
+  wMyDB();
+  $('save-db-btn').style.display = 'none';
+  $('save-db-btn').textContent = '✓ Guardado';
+  setTimeout(() => { $('save-db-btn').textContent = '⭐ Guardar en Mis productos'; }, 1500);
+}
+
+function renderMyDB() {
+  const el = $('mydb-list');
+  if (!S.mydb.length) {
+    el.innerHTML = '<div class="mydb-empty">Sin productos guardados.<br>Escanea un producto y pulsa<br><strong>⭐ Guardar en Mis productos</strong>.</div>';
+    return;
+  }
+  el.innerHTML = S.mydb.map(p => `
+    <div class="mydb-item" onclick="useMyDBProduct('${p.id}')">
+      <div class="mydb-item-info">
+        <span class="mydb-item-name">${p.name}</span>
+        <div class="mydb-item-macros">P ${p.per100.protein}g · C ${p.per100.carbs}g · G ${p.per100.fat}g <span style="color:var(--dim)">por 100g</span></div>
+      </div>
+      <div class="mydb-item-kcal">${p.per100.kcal}</div>
+      <button class="mydb-del" onclick="event.stopPropagation();delMyDB('${p.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+function useMyDBProduct(id) {
+  const p = S.mydb.find(x => x.id === id); if (!p) return;
+  switchMode('barcode');
+  setResultFromDB(p, 'mydb', p.barcode || '');
+}
+
+function delMyDB(id) {
+  S.mydb = S.mydb.filter(p => p.id !== id);
+  wMyDB(); renderMyDB();
 }
 
 // ─────────────────────────────────────────────
