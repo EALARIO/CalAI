@@ -752,8 +752,7 @@ async function fetchBarcode(code) {
     if (!ru.ok) throw new Error('Error USDA');
     const du = await ru.json();
     const food = du.foods?.[0];
-    if (!food) throw new Error('Producto no encontrado en OpenFoodFacts ni USDA.
-Intenta introducir los datos manualmente con ✏️ Manual.');
+    if (!food) throw new Error('Producto no encontrado. Introdúcelo manualmente con ✏️ Manual.');
     const getNutr = (id) => food.foodNutrients?.find(n => n.nutrientId === id)?.value || 0;
     const per100 = {
       kcal:    Math.round(getNutr(1008)),
