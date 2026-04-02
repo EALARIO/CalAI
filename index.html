@@ -162,10 +162,20 @@ input[type=file] { display: none; }
 /* ── Log ── */
 .log-empty { text-align: center; color: var(--dim); padding: 50px 0; font-size: 12px; line-height: 2.2; }
 .log-totals { background: var(--s1); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
-.lt-head { font-size: 10px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; }
+.lt-head { font-size: 10px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; display:flex; align-items:center; justify-content:space-between; }
+.lt-head-label { font-size:10px; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:.8px; }
+.lt-head-count { font-size:10px; color:var(--dim); }
 .lt-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
-.lt-cell .v { font-size: 15px; font-weight: 600; color: var(--accent); }
-.lt-cell .l { font-size: 9px; color: var(--muted); margin-top: 1px; }
+.lt-cell { background:var(--s2); border-radius:9px; padding:9px 6px; text-align:center; }
+.lt-cell .v { font-size: 16px; font-weight: 700; color: var(--accent); }
+.lt-cell .l { font-size: 9px; color: var(--muted); margin-top: 2px; }
+.lt-cell.prot .v { color: var(--green); }
+.lt-cell.carb .v { color: var(--yellow); }
+.lt-cell.fat  .v { color: var(--accent); }
+.lt-progress { margin-top: 10px; }
+.lt-progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+.lt-progress-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--a3)); transition: width .5s; }
+.lt-progress-label { font-size: 9px; color: var(--dim); display: flex; justify-content: space-between; }
 .log-day-title { font-size: 10px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .8px; padding: 4px 0 8px; }
 .entry { background: var(--s1); border: 1px solid var(--border); border-radius: 12px; padding: 12px 13px; margin-bottom: 6px; }
 .entry-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 5px; }
@@ -313,6 +323,20 @@ input[type=file] { display: none; }
 .edit-actions { display:flex; gap:8px; margin-top:14px; }
 .edit-save { flex:2; padding:13px; background:var(--accent); border:none; border-radius:10px; font-size:13px; font-weight:700; color:#000; cursor:pointer; }
 .edit-cancel { flex:1; padding:13px; background:none; border:1px solid var(--border); border-radius:10px; color:var(--muted); font-size:11px; cursor:pointer; }
+
+/* ── Text estimator mode ── */
+.text-form { background:var(--s1); border:1px solid var(--border); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+.text-form .tf-title { font-size:13px; font-weight:600; color:var(--text); }
+.text-form .tf-sub   { font-size:11px; color:var(--muted); line-height:1.5; }
+.text-area { width:100%; background:var(--s2); border:1px solid var(--border); border-radius:10px; padding:12px 13px; color:var(--text); font-size:14px; font-family:'Work Sans',sans-serif; outline:none; resize:none; min-height:100px; line-height:1.5; -webkit-appearance:none; }
+.text-area:focus { border-color:var(--accent); }
+.text-area::placeholder { color:var(--dim); }
+.text-examples { display:flex; flex-direction:column; gap:6px; }
+.text-ex { background:var(--s2); border:1px solid var(--border); border-radius:8px; padding:8px 11px; font-size:11px; color:var(--muted); cursor:pointer; transition:all .15s; }
+.text-ex:hover { border-color:var(--accent); color:var(--accent); }
+
+/* ── Save to MyDB from manual / text ── */
+.save-mydb-row { display:flex; gap:8px; margin-top:6px; }
 </style>
 </head>
 <body>
@@ -454,7 +478,7 @@ input[type=file] { display: none; }
 <div id="reset-sheet" class="off">
   <div class="reset-box">
     <h3>Borrar todos los datos</h3>
-    <p>Se eliminarán todos los registros de comida. Esta acción no se puede deshacer.</p>
+    <p>Se eliminarán todos los registros de los últimos 7 días. Esta acción no se puede deshacer.</p>
     <div class="reset-btns">
       <button class="rb-yes" onclick="doReset()">Borrar todo</button>
       <button class="rb-no"  onclick="hide('reset-sheet')">Cancelar</button>
@@ -534,6 +558,7 @@ input[type=file] { display: none; }
         <button class="subtab on" id="st-photo"   onclick="switchMode('photo')">📷 Foto</button>
         <button class="subtab"    id="st-barcode"  onclick="switchMode('barcode')">▦ Código</button>
         <button class="subtab"    id="st-manual"   onclick="switchMode('manual')">✏️ Manual</button>
+        <button class="subtab"    id="st-text"    onclick="switchMode('text')">💬 Texto</button>
         <button class="subtab"    id="st-mydb"    onclick="switchMode('mydb')">⭐ Mis productos</button>
       </div>
 
@@ -541,10 +566,10 @@ input[type=file] { display: none; }
       <div id="mode-photo">
         <div class="drop-zone" id="drop-zone" onclick="document.getElementById('photo-file').click()">
           <span class="dz-icon">🍽️</span>
-          <div class="dz-title">Hacer foto o elegir imagen</div>
+          <div class="dz-title">Hacer foto o elegir de galería</div>
           <div class="dz-sub">Gemini analizará el plato y estimará macros</div>
         </div>
-        <input type="file" id="photo-file" accept="image/*" capture="environment" onchange="handlePhoto(this)">
+        <input type="file" id="photo-file" accept="image/*" onchange="handlePhoto(this)">
         <img id="photo-prev" class="preview-img" style="display:none" alt="">
         <button class="ghost-btn" id="retry-btn" style="display:none" onclick="retryPhoto()">↺ Repetir foto</button>
       </div>
@@ -597,7 +622,10 @@ input[type=file] { display: none; }
               <input type="number" id="m-fat" placeholder="0" min="0" step="0.1">
             </div>
           </div>
-          <button class="confirm-btn" onclick="confirmManual()">✓ Añadir al registro</button>
+          <div style="display:flex;gap:8px">
+            <button class="confirm-btn" onclick="confirmManual()">✓ Añadir</button>
+            <button class="confirm-btn" style="background:var(--s2);color:var(--accent);border:1px solid var(--accent);flex:0 0 auto;padding:13px 14px;font-size:12px" onclick="saveManualToMyDB()">⭐ Guardar</button>
+          </div>
         </div>
       </div>
 
@@ -605,6 +633,23 @@ input[type=file] { display: none; }
       <div id="mode-mydb" style="display:none">
         <div style="font-size:11px;color:var(--muted);margin-bottom:10px;margin-top:2px">Toca un producto para añadirlo al registro de hoy.</div>
         <div id="mydb-list"></div>
+      </div>
+
+
+      <!-- TEXT ESTIMATOR -->
+      <div id="mode-text" style="display:none">
+        <div class="text-form">
+          <div class="tf-title">💬 Describe lo que has comido</div>
+          <div class="tf-sub">Escribe el alimento y la cantidad. Gemini estimará calorías y macros.</div>
+          <textarea class="text-area" id="text-input" placeholder="Ej: 150g de pechuga de pollo a la plancha con 80g de arroz blanco y ensalada..." rows="4"></textarea>
+          <div class="tf-sub" style="margin-top:-4px">Ejemplos rápidos:</div>
+          <div class="text-examples">
+            <div class="text-ex" onclick="setTextExample(this)">2 huevos revueltos con aceite de oliva</div>
+            <div class="text-ex" onclick="setTextExample(this)">Un plátano mediano y un yogur natural desnatado</div>
+            <div class="text-ex" onclick="setTextExample(this)">100g de salmón a la plancha con verduras</div>
+          </div>
+          <button class="confirm-btn" onclick="analyzeText()">✦ Estimar con Gemini</button>
+        </div>
       </div>
 
       <!-- Loading / Error / Result -->
@@ -748,10 +793,20 @@ const wCfg = () => localStorage.setItem(LS_CFG, JSON.stringify(S.cfg));
 //  BOOT
 // ─────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+  purgeOldEntries();   // limpia entradas > 7 días
   updateWheel();
-  // Siempre arranca en el resumen del día (tab Add)
-  // Settings solo se abre si el usuario pulsa ⚙
 });
+
+function purgeOldEntries() {
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000; // 7 días atrás
+  const before = S.log.length;
+  S.log = S.log.filter(e => {
+    // Convertir dateKey a timestamp
+    const ts = new Date(e.dateKey).getTime();
+    return ts >= cutoff;
+  });
+  if (S.log.length !== before) wLog();
+}
 
 // ─────────────────────────────────────────────
 //  HELPERS UI
@@ -782,7 +837,7 @@ function switchTab(t) {
 }
 function switchMode(m) {
   S.mode = m;
-  ['photo','barcode','manual','mydb'].forEach(x => {
+  ['photo','barcode','manual','text','mydb'].forEach(x => {
     $('mode-' + x).style.display = x === m ? '' : 'none';
     $('st-' + x).classList.toggle('on', x === m);
   });
@@ -859,6 +914,7 @@ async function handlePhoto(input) {
     $('rc-fat').textContent  = data.fat     || 0;
     const cm = { alta: '✓ confianza alta', media: '~ confianza media', baja: '⚠ confianza baja' };
     $('rc-note').textContent = [data.notes, cm[data.confidence]].filter(Boolean).join(' · ');
+    $('save-db-btn').style.display = '';
     $('result-card').style.display = '';
   } catch(e) { showErr(e.message); }
   finally { hideLoad(); }
@@ -877,27 +933,25 @@ function retryPhoto() {
 //  GEMINI API — con retry y limpieza JSON
 // ─────────────────────────────────────────────
 async function gemini(b64, key) {
-  const prompt = `Eres un experto nutricionista. Analiza esta imagen de comida con precisión.
-Responde ÚNICAMENTE con un objeto JSON válido, sin texto antes ni después, sin bloques de código markdown.
-Formato exacto:
-{"name":"nombre completo del plato","quantity":"cantidad estimada con unidad","kcal":número_entero,"protein":número_decimal,"carbs":número_decimal,"fat":número_decimal,"confidence":"alta","notes":"observación breve"}
-- kcal, protein, carbs, fat deben ser números (no strings)
-- Estima los valores TOTALES para la cantidad visible en la imagen
-- Si no puedes ver comida, devuelve kcal:0 y confidence:"baja"`;
+  // Intentar primero con imagen JPEG, luego como PNG si falla
+  const mimeType = b64.startsWith('/9j/') ? 'image/jpeg' : 'image/jpeg';
+
+  const prompt = `Analiza esta imagen de comida. Devuelve SOLO un JSON, sin texto adicional, sin markdown.
+Formato exacto (todos los valores numéricos deben ser números, no texto):
+{"name":"nombre del plato o conjunto de alimentos","quantity":"cantidad estimada","kcal":250,"protein":20.5,"carbs":30.0,"fat":8.0,"confidence":"alta","notes":"descripción breve"}
+Si hay varios alimentos, estima el total conjunto. Si no ves comida, pon kcal:0.`;
+
+  const body = {
+    contents: [{ parts: [
+      { inlineData: { mimeType, data: b64 } },
+      { text: prompt }
+    ]}],
+    generationConfig: { maxOutputTokens: 300, temperature: 0.1 }
+  };
 
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [
-          { inlineData: { mimeType: 'image/jpeg', data: b64 } },
-          { text: prompt }
-        ]}],
-        generationConfig: { maxOutputTokens: 512, temperature: 0.1, responseMimeType: 'application/json' }
-      })
-    }
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
   );
 
   if (!res.ok) {
@@ -908,22 +962,48 @@ Formato exacto:
   const d = await res.json();
   let raw = d?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-  // Limpiar posibles bloques markdown
-  raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  // Limpieza agresiva de la respuesta
+  raw = raw
+    .replace(/```json/gi, '')
+    .replace(/```/g, '')
+    .replace(/^[^{]*/s, '')   // quitar todo lo anterior al primer {
+    .trim();
 
-  // Extraer primer objeto JSON
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('Gemini no devolvió JSON válido. Inténtalo de nuevo.');
+  // Extraer el primer objeto JSON completo (balanceo de llaves)
+  let jsonStr = null;
+  let depth = 0, start = -1;
+  for (let i = 0; i < raw.length; i++) {
+    if (raw[i] === '{') { if (depth === 0) start = i; depth++; }
+    else if (raw[i] === '}') { depth--; if (depth === 0 && start >= 0) { jsonStr = raw.slice(start, i + 1); break; } }
+  }
 
-  const parsed = JSON.parse(match[0]);
-  // Asegurar tipos numéricos
+  if (!jsonStr) {
+    // Último intento: buscar con regex
+    const m = raw.match(/\{[\s\S]*?\}/);
+    if (m) jsonStr = m[0];
+  }
+
+  if (!jsonStr) throw new Error('Gemini no pudo analizar la imagen. Intenta con otra foto más clara o usa entrada manual.');
+
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch(e) {
+    // Intentar sanear el JSON (comillas, comas finales, etc.)
+    const sanitized = jsonStr
+      .replace(/,\s*}/g, '}')
+      .replace(/,\s*]/g, ']')
+      .replace(/(['"])?([a-zA-Z_][a-zA-Z0-9_]*)(['"])?\s*:/g, '"$2":');
+    parsed = JSON.parse(sanitized);
+  }
+
   return {
-    name:       String(parsed.name       || 'Alimento'),
-    quantity:   String(parsed.quantity   || ''),
-    kcal:       Number(parsed.kcal)       || 0,
-    protein:    Number(parsed.protein)    || 0,
-    carbs:      Number(parsed.carbs)      || 0,
-    fat:        Number(parsed.fat)        || 0,
+    name:       String(parsed.name       || 'Alimento detectado'),
+    quantity:   String(parsed.quantity   || '1 porción'),
+    kcal:       Math.round(Number(parsed.kcal)    || 0),
+    protein:    +( Number(parsed.protein) || 0).toFixed(1),
+    carbs:      +( Number(parsed.carbs)   || 0).toFixed(1),
+    fat:        +( Number(parsed.fat)     || 0).toFixed(1),
     confidence: String(parsed.confidence || 'media'),
     notes:      String(parsed.notes      || ''),
   };
@@ -1039,22 +1119,45 @@ const LS_MYDB = 'calai_mydb_v1';
 const wMyDB = () => localStorage.setItem(LS_MYDB, JSON.stringify(S.mydb));
 
 function saveToMyDB() {
-  if (!S.result || !S.per100) return;
-  const existing = S.mydb.findIndex(p => p.barcode === S.result.barcode && p.barcode);
+  if (!S.result) return;
+  const r = S.result;
+  // Build per100 from result — for photo/text we store absolute values as per100
+  const per100 = S.per100 ? { ...S.per100 } : {
+    kcal:    r.kcal    || 0,
+    protein: r.protein || 0,
+    carbs:   r.carbs   || 0,
+    fat:     r.fat     || 0,
+  };
+  const id = r.barcode || ('mydb_' + Date.now());
+  const existing = S.mydb.findIndex(p => p.id === id);
   const entry = {
-    id:      S.result.barcode || Date.now().toString(),
-    barcode: S.result.barcode || '',
-    name:    S.result.name,
-    brand:   S.result.brand || '',
-    serving: S.result.serving || '100g',
-    per100:  { ...S.per100 },
+    id,
+    barcode: r.barcode || '',
+    name:    r.name,
+    brand:   r.brand   || '',
+    serving: r.serving || (r.quantity || '1 porción'),
+    per100,
+    isUnit:  !r.barcode && !S.per100, // photo/text = treat as fixed portion
   };
   if (existing >= 0) S.mydb[existing] = entry;
   else S.mydb.unshift(entry);
   wMyDB();
   $('save-db-btn').style.display = 'none';
-  $('save-db-btn').textContent = '✓ Guardado';
-  setTimeout(() => { $('save-db-btn').textContent = '⭐ Guardar en Mis productos'; }, 1500);
+  showSavedFeedback();
+}
+
+function showSavedFeedback() {
+  const btn = $('save-db-btn');
+  const orig = btn.textContent;
+  btn.textContent = '✓ Guardado en Mis productos';
+  btn.style.color = 'var(--green)';
+  btn.style.borderColor = 'var(--green)';
+  setTimeout(() => {
+    btn.textContent = orig;
+    btn.style.color = '';
+    btn.style.borderColor = '';
+    btn.style.display = 'none';
+  }, 2000);
 }
 
 function renderMyDB() {
@@ -1063,22 +1166,62 @@ function renderMyDB() {
     el.innerHTML = '<div class="mydb-empty">Sin productos guardados.<br>Escanea un producto y pulsa<br><strong>⭐ Guardar en Mis productos</strong>.</div>';
     return;
   }
-  el.innerHTML = S.mydb.map(p => `
-    <div class="mydb-item" onclick="useMyDBProduct('${p.id}')">
+  el.innerHTML = S.mydb.map(p => {
+    const srcIco = p.barcode ? '▦' : p.isUnit ? '🍽️' : '📊';
+    const perLabel = p.isUnit ? 'por porción' : 'por 100g';
+    return `<div class="mydb-item" onclick="useMyDBProduct('${p.id}')">
       <div class="mydb-item-info">
-        <span class="mydb-item-name">${p.name}</span>
-        <div class="mydb-item-macros">P ${p.per100.protein}g · C ${p.per100.carbs}g · G ${p.per100.fat}g <span style="color:var(--dim)">por 100g</span></div>
+        <span class="mydb-item-name">${srcIco} ${p.name}</span>
+        <div class="mydb-item-macros">P ${p.per100.protein}g · C ${p.per100.carbs}g · G ${p.per100.fat}g <span style="color:var(--dim)">${perLabel}</span></div>
       </div>
       <div class="mydb-item-kcal">${p.per100.kcal}</div>
       <button class="mydb-del" onclick="event.stopPropagation();delMyDB('${p.id}')">✕</button>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function useMyDBProduct(id) {
   const p = S.mydb.find(x => x.id === id); if (!p) return;
-  switchMode('barcode');
-  setResultFromDB(p, 'mydb', p.barcode || '');
+  if (p.barcode) {
+    switchMode('barcode');
+  }
+  // Show result directly in current panel
+  S.per100 = p.isUnit ? null : { ...p.per100 };
+  S.result = {
+    source:  p.barcode ? 'barcode' : 'mydb',
+    name:    p.name,
+    brand:   p.brand   || '',
+    serving: p.serving || '1 porción',
+    barcode: p.barcode || '',
+    quantity: p.serving || '1 porción',
+    kcal:    p.per100.kcal,
+    protein: p.per100.protein,
+    carbs:   p.per100.carbs,
+    fat:     p.per100.fat,
+    confidence: 'alta',
+    notes:   'Desde Mis productos',
+  };
+  $('rc-name').textContent = p.name;
+  $('rc-sub').innerHTML = (p.brand ? p.brand + ' · ' : '') + p.serving
+    + ' <span class="source-badge badge-mydb">Mis productos</span>';
+  if (p.isUnit) {
+    // Fixed portion — no gram adjustment
+    $('gram-row').style.display = 'none';
+    $('rc-kcal').textContent = p.per100.kcal;
+    $('rc-prot').textContent = p.per100.protein;
+    $('rc-carb').textContent = p.per100.carbs;
+    $('rc-fat').textContent  = p.per100.fat;
+    $('rc-note').textContent = 'Porción fija';
+  } else {
+    $('gram-row').style.display = '';
+    $('gram-inp').value = 100;
+    bcRecalc();
+    $('rc-note').textContent = 'Valores por 100g';
+  }
+  $('save-db-btn').style.display = 'none';
+  $('result-card').style.display = '';
+  // Switch to barcode tab to show result
+  switchMode(p.barcode ? 'barcode' : 'photo');
 }
 
 function delMyDB(id) {
@@ -1193,8 +1336,9 @@ function confirmAdd() {
       time: tsNow(), dateKey: new Date().toDateString(),
     };
   } else {
+    // photo or text source
     entry = {
-      id: Date.now(), source: 'photo',
+      id: Date.now(), source: r.source || 'photo',
       name: r.name, brand: '', quantity: r.quantity,
       kcal: r.kcal, protein: r.protein, carbs: r.carbs, fat: r.fat,
       confidence: r.confidence, notes: r.notes || '',
@@ -1224,33 +1368,72 @@ function renderLog() {
     el.innerHTML = '<div class="log-empty">Sin registros todavía.<br>Usa <strong>+ Añadir</strong> para empezar.</div>';
     return;
   }
-  const tl = S.log.filter(e => e.dateKey === today);
-  const pl = S.log.filter(e => e.dateKey !== today);
-  let h = '';
 
-  if (tl.length) {
-    const tot = tl.reduce((a,e) => ({ kcal: a.kcal+e.kcal, protein: a.protein+e.protein, carbs: a.carbs+e.carbs, fat: a.fat+e.fat }), { kcal:0,protein:0,carbs:0,fat:0 });
+  // Agrupar por día, ordenando del más reciente al más antiguo
+  const byDay = {};
+  S.log.forEach(e => {
+    if (!byDay[e.dateKey]) byDay[e.dateKey] = [];
+    byDay[e.dateKey].push(e);
+  });
+
+  // Ordenar días: hoy primero, luego los anteriores
+  const days = Object.keys(byDay).sort((a, b) => new Date(b) - new Date(a));
+
+  let h = '';
+  days.forEach((day, idx) => {
+    const entries = byDay[day];
+    const isToday = day === today;
+    const tot = entries.reduce((a,e) => ({
+      kcal: a.kcal+e.kcal, protein: a.protein+e.protein,
+      carbs: a.carbs+e.carbs, fat: a.fat+e.fat
+    }), {kcal:0,protein:0,carbs:0,fat:0});
+
+    // Cabecera del día
+    const dayLabel = isToday ? 'Hoy' : formatDayLabel(day);
+    if (idx > 0) h += '<div style="height:10px"></div>';
+
+    // Totales del día
+    const goal = S.cfg.goal || 2000;
+    const kcalPct = Math.min(tot.kcal / goal * 100, 100).toFixed(0);
+    const progressBar = isToday ? `
+      <div class="lt-progress">
+        <div class="lt-progress-label">
+          <span>${Math.round(tot.kcal)} kcal consumidas</span>
+          <span>${goal - Math.round(tot.kcal) > 0 ? (goal - Math.round(tot.kcal)) + ' restantes' : 'objetivo superado'}</span>
+        </div>
+        <div class="lt-progress-bar"><div class="lt-progress-fill" style="width:${kcalPct}%"></div></div>
+      </div>` : '';
     h += `<div class="log-totals">
-      <div class="lt-head">Totales hoy</div>
+      <div class="lt-head">
+        <span class="lt-head-label">${dayLabel}</span>
+        <span class="lt-head-count">${entries.length} registro${entries.length !== 1 ? 's' : ''}</span>
+      </div>
       <div class="lt-grid">
         <div class="lt-cell"><div class="v">${Math.round(tot.kcal)}</div><div class="l">kcal</div></div>
-        <div class="lt-cell"><div class="v">${tot.protein.toFixed(1)}</div><div class="l">prot g</div></div>
-        <div class="lt-cell"><div class="v">${tot.carbs.toFixed(1)}</div><div class="l">carbs g</div></div>
-        <div class="lt-cell"><div class="v">${tot.fat.toFixed(1)}</div><div class="l">grasa g</div></div>
+        <div class="lt-cell prot"><div class="v">${tot.protein.toFixed(1)}g</div><div class="l">proteína</div></div>
+        <div class="lt-cell carb"><div class="v">${tot.carbs.toFixed(1)}g</div><div class="l">carbos</div></div>
+        <div class="lt-cell fat"><div class="v">${tot.fat.toFixed(1)}g</div><div class="l">grasa</div></div>
       </div>
+      ${progressBar}
     </div>`;
-    h += `<div class="log-day-title">Hoy · ${tl.length} registros</div>`;
-    tl.forEach(e => h += entryHTML(e));
-  }
-  if (pl.length) {
-    h += '<div class="log-day-title" style="margin-top:14px">Anteriores</div>';
-    pl.forEach(e => h += entryHTML(e));
-  }
+
+    entries.forEach(e => h += entryHTML(e));
+  });
+
   el.innerHTML = h;
 }
 
+function formatDayLabel(dateKey) {
+  const d = new Date(dateKey);
+  const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const diff = Math.round((new Date().setHours(0,0,0,0) - d.setHours(0,0,0,0)) / 86400000);
+  if (diff === 1) return 'Ayer';
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
 function entryHTML(e) {
-  const ico = { photo:'📷', barcode:'▦', manual:'✏️' }[e.source] || '•';
+  const ico = { photo:'📷', barcode:'▦', manual:'✏️', text:'💬' }[e.source] || '•';
   return `<div class="entry">
     <div class="entry-top">
       <span class="entry-ico">${ico}</span>
@@ -1495,6 +1678,114 @@ function saveEdit() {
   wLog(); updateWheel(); renderLog();
   hide('edit-sheet');
   _editId = null;
+}
+
+
+// ─────────────────────────────────────────────
+//  TEXT ESTIMATOR — Gemini sin imagen
+// ─────────────────────────────────────────────
+function setTextExample(el) {
+  $('text-input').value = el.textContent;
+  $('text-input').focus();
+}
+
+async function analyzeText() {
+  const text = $('text-input').value.trim();
+  if (!text) { showErr('Escribe una descripción del alimento.'); return; }
+  if (!S.cfg.key) { showErr('Configura tu API key de Gemini en ⚙'); return; }
+  hideErr(); hideResult();
+  showLoad('Estimando calorías con Gemini…');
+  try {
+    const data = await geminiText(text, S.cfg.key);
+    S.result = { ...data, source: 'text', quantity: data.quantity || text.slice(0, 60) };
+    $('rc-name').textContent = data.name;
+    $('rc-sub').textContent  = data.quantity || '';
+    $('gram-row').style.display = 'none';
+    $('rc-kcal').textContent = data.kcal;
+    $('rc-prot').textContent = data.protein;
+    $('rc-carb').textContent = data.carbs;
+    $('rc-fat').textContent  = data.fat;
+    const cm = { alta:'✓ estimación alta', media:'~ estimación media', baja:'⚠ estimación baja' };
+    $('rc-note').textContent = [data.notes, cm[data.confidence]].filter(Boolean).join(' · ');
+    $('save-db-btn').style.display = '';
+    $('result-card').style.display = '';
+  } catch(e) { showErr(e.message); }
+  finally { hideLoad(); }
+}
+
+async function geminiText(description, key) {
+  const prompt = `Eres nutricionista. El usuario describe lo que ha comido: "${description}"
+Estima las calorías y macronutrientes totales. Devuelve SOLO JSON sin texto adicional:
+{"name":"nombre descriptivo","quantity":"cantidad descrita","kcal":250,"protein":20.5,"carbs":30.0,"fat":8.0,"confidence":"alta","notes":"nota breve sobre la estimación"}`;
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 250, temperature: 0.1 }
+      })
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Error ${res.status} de Gemini`);
+  }
+
+  const d = await res.json();
+  let raw = d?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+  // Limpieza y extracción robusta de JSON
+  raw = raw.replace(/\`\`\`json/gi, '').replace(/\`\`\`/g, '').trim();
+  let jsonStr = null, depth = 0, start = -1;
+  for (let i = 0; i < raw.length; i++) {
+    if (raw[i] === '{') { if (!depth) start = i; depth++; }
+    else if (raw[i] === '}') { depth--; if (!depth && start >= 0) { jsonStr = raw.slice(start, i+1); break; } }
+  }
+  if (!jsonStr) throw new Error('Gemini no devolvió una estimación válida. Intenta ser más específico.');
+
+  const p = JSON.parse(jsonStr);
+  return {
+    name:       String(p.name       || description.slice(0,50)),
+    quantity:   String(p.quantity   || ''),
+    kcal:       Math.round(Number(p.kcal)    || 0),
+    protein:    +( Number(p.protein) || 0).toFixed(1),
+    carbs:      +( Number(p.carbs)   || 0).toFixed(1),
+    fat:        +( Number(p.fat)     || 0).toFixed(1),
+    confidence: String(p.confidence || 'media'),
+    notes:      String(p.notes      || ''),
+  };
+}
+
+
+function saveManualToMyDB() {
+  const name = $('m-name').value.trim();
+  if (!name) { showErr('Introduce al menos el nombre del alimento.'); return; }
+  const kcal    = +$('m-kcal').value || 0;
+  const protein = +$('m-prot').value || 0;
+  const carbs   = +$('m-carb').value || 0;
+  const fat     = +$('m-fat').value  || 0;
+  const qty     = $('m-qty').value.trim() || '1 porción';
+  const entry = {
+    id:      'mydb_' + Date.now(),
+    barcode: '',
+    name,
+    brand:   '',
+    serving: qty,
+    per100:  { kcal, protein, carbs, fat },
+    isUnit:  true, // manual entries are fixed portions
+  };
+  S.mydb.unshift(entry);
+  wMyDB();
+  // Visual feedback
+  const btn = event.target;
+  btn.textContent = '✓ Guardado';
+  btn.style.background = 'var(--green)';
+  btn.style.color = '#000';
+  setTimeout(() => { btn.textContent = '⭐ Guardar'; btn.style.background = 'var(--s2)'; btn.style.color = 'var(--accent)'; }, 1500);
 }
 
 // ─────────────────────────────────────────────
