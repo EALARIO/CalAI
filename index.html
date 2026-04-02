@@ -916,7 +916,13 @@ async function handlePhoto(input) {
     $('rc-note').textContent = [data.notes, cm[data.confidence]].filter(Boolean).join(' · ');
     $('save-db-btn').style.display = '';
     $('result-card').style.display = '';
-  } catch(e) { showErr(e.message); }
+  } catch(e) {
+    if (e.message === 'Failed to fetch' || e.name === 'TypeError') {
+      showErr('Sin conexión a Gemini. Introduce el alimento en ✏️ Manual o descríbelo en 💬 Texto.');
+    } else {
+      showErr(e.message);
+    }
+  }
   finally { hideLoad(); }
 }
 
@@ -933,79 +939,105 @@ function retryPhoto() {
 //  GEMINI API — con retry y limpieza JSON
 // ─────────────────────────────────────────────
 async function gemini(b64, key) {
-  // Intentar primero con imagen JPEG, luego como PNG si falla
-  const mimeType = b64.startsWith('/9j/') ? 'image/jpeg' : 'image/jpeg';
+  // Detectar MIME type
+  const mimeType = b64.startsWith('iVBOR') ? 'image/png' : 'image/jpeg';
 
-  const prompt = `Analiza esta imagen de comida. Devuelve SOLO un JSON, sin texto adicional, sin markdown.
-Formato exacto (todos los valores numéricos deben ser números, no texto):
-{"name":"nombre del plato o conjunto de alimentos","quantity":"cantidad estimada","kcal":250,"protein":20.5,"carbs":30.0,"fat":8.0,"confidence":"alta","notes":"descripción breve"}
-Si hay varios alimentos, estima el total conjunto. Si no ves comida, pon kcal:0.`;
-
-  const body = {
-    contents: [{ parts: [
-      { inlineData: { mimeType, data: b64 } },
-      { text: prompt }
-    ]}],
-    generationConfig: { maxOutputTokens: 300, temperature: 0.1 }
-  };
+  // Prompt compacto y muy explícito
+  const prompt = `You are a nutrition expert. Look at this food image and respond with ONLY a JSON object, no other text:
+{"name":"dish name","quantity":"estimated amount","kcal":350,"protein":25.0,"carbs":30.0,"fat":12.0,"confidence":"alta","notes":"brief note"}
+Rules: numbers must be actual numbers (not strings). Estimate total macros for everything visible.`;
 
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [
+          { inlineData: { mimeType, data: b64 } },
+          { text: prompt }
+        ]}],
+        generationConfig: {
+          maxOutputTokens: 400,
+          temperature: 0.1,
+          responseMimeType: 'application/json'
+        }
+      })
+    }
   );
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Error ${res.status} de Gemini`);
+    const msg = err?.error?.message || `Error ${res.status}`;
+    if (res.status === 429 || msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED')) {
+      throw new Error('Límite de Gemini alcanzado. Espera unos minutos o introduce el alimento en ✏️ Manual o 💬 Texto.');
+    }
+    throw new Error('Error al analizar la imagen. Introduce el alimento en ✏️ Manual o descríbelo en 💬 Texto.');
   }
 
   const d = await res.json();
-  let raw = d?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-  // Limpieza agresiva de la respuesta
-  raw = raw
-    .replace(/```json/gi, '')
-    .replace(/```/g, '')
-    .replace(/^[^{]*/s, '')   // quitar todo lo anterior al primer {
-    .trim();
+  // Gemini puede devolver el texto en parts[0] o parts[N]
+  const parts = d?.candidates?.[0]?.content?.parts || [];
+  let raw = parts.map(p => p.text || '').join('').trim();
 
-  // Extraer el primer objeto JSON completo (balanceo de llaves)
-  let jsonStr = null;
+  if (!raw) {
+    // Puede que Gemini haya rechazado la imagen (contenido, seguridad, etc.)
+    const reason = d?.candidates?.[0]?.finishReason || 'unknown';
+    throw new Error(`Gemini no procesó la imagen (${reason}). Prueba con 💬 Texto.`);
+  }
+
+  // Extraer JSON del texto
+  const parsed = extractJSON(raw);
+  if (parsed) return parsed;
+
+  // Si no hay JSON extraíble, sugerir alternativa
+  throw new Error('Gemini no pudo analizar la imagen. Introdúcelo en ✏️ Manual o descríbelo en 💬 Texto.');
+}
+
+
+function extractJSON(raw) {
+  // Limpiar bloques markdown
+  raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+
+  // Extraer primer objeto JSON completo por balanceo de llaves
   let depth = 0, start = -1;
   for (let i = 0; i < raw.length; i++) {
-    if (raw[i] === '{') { if (depth === 0) start = i; depth++; }
-    else if (raw[i] === '}') { depth--; if (depth === 0 && start >= 0) { jsonStr = raw.slice(start, i + 1); break; } }
+    if (raw[i] === '{') { if (!depth) start = i; depth++; }
+    else if (raw[i] === '}') {
+      depth--;
+      if (!depth && start >= 0) {
+        const jsonStr = raw.slice(start, i + 1);
+        try {
+          const p = JSON.parse(jsonStr);
+          if (p.kcal !== undefined || p.name) return normalizeResult(p);
+        } catch(_) {
+          // intentar sanear
+          try {
+            const clean = jsonStr
+              .replace(/,\s*([}\]])/g, '$1')
+              .replace(/([{,]\s*)([a-zA-Z_][\w]*)\s*:/g, '$1"$2":');
+            const p = JSON.parse(clean);
+            if (p.kcal !== undefined || p.name) return normalizeResult(p);
+          } catch(_) {}
+        }
+        start = -1; // buscar siguiente objeto
+      }
+    }
   }
+  return null;
+}
 
-  if (!jsonStr) {
-    // Último intento: buscar con regex
-    const m = raw.match(/\{[\s\S]*?\}/);
-    if (m) jsonStr = m[0];
-  }
-
-  if (!jsonStr) throw new Error('Gemini no pudo analizar la imagen. Intenta con otra foto más clara o usa entrada manual.');
-
-  let parsed;
-  try {
-    parsed = JSON.parse(jsonStr);
-  } catch(e) {
-    // Intentar sanear el JSON (comillas, comas finales, etc.)
-    const sanitized = jsonStr
-      .replace(/,\s*}/g, '}')
-      .replace(/,\s*]/g, ']')
-      .replace(/(['"])?([a-zA-Z_][a-zA-Z0-9_]*)(['"])?\s*:/g, '"$2":');
-    parsed = JSON.parse(sanitized);
-  }
-
+function normalizeResult(p) {
   return {
-    name:       String(parsed.name       || 'Alimento detectado'),
-    quantity:   String(parsed.quantity   || '1 porción'),
-    kcal:       Math.round(Number(parsed.kcal)    || 0),
-    protein:    +( Number(parsed.protein) || 0).toFixed(1),
-    carbs:      +( Number(parsed.carbs)   || 0).toFixed(1),
-    fat:        +( Number(parsed.fat)     || 0).toFixed(1),
-    confidence: String(parsed.confidence || 'media'),
-    notes:      String(parsed.notes      || ''),
+    name:       String(p.name       || 'Alimento detectado'),
+    quantity:   String(p.quantity   || '1 porción'),
+    kcal:       Math.round(Number(p.kcal)    || 0),
+    protein:    +( Number(p.protein) || 0).toFixed(1),
+    carbs:      +( Number(p.carbs)   || 0).toFixed(1),
+    fat:        +( Number(p.fat)     || 0).toFixed(1),
+    confidence: String(p.confidence || 'media'),
+    notes:      String(p.notes      || ''),
   };
 }
 
@@ -1709,7 +1741,13 @@ async function analyzeText() {
     $('rc-note').textContent = [data.notes, cm[data.confidence]].filter(Boolean).join(' · ');
     $('save-db-btn').style.display = '';
     $('result-card').style.display = '';
-  } catch(e) { showErr(e.message); }
+  } catch(e) {
+    if (e.message === 'Failed to fetch' || e.name === 'TypeError') {
+      showErr('Sin conexión a Gemini. Comprueba que tienes internet y la app está en HTTPS.');
+    } else {
+      showErr(e.message);
+    }
+  }
   finally { hideLoad(); }
 }
 
